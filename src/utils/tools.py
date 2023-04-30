@@ -10,6 +10,13 @@ import warnings
 warnings.filterwarnings('ignore')
 import tqdm
 import matplotlib.ticker as mtick
+import glob
+from tensorflow import keras
+from sklearn.metrics import confusion_matrix
+from sklearn import metrics
+
+
+
 
 
 def pulse_height(uniq_shapes):
@@ -252,3 +259,165 @@ def controlled_mc(shape_file, required_examples, sample_size, indice_to_add):
     #pos = [85,90,95,100,105,110,115,120]
     x, y = shape_imposer(X,Y,S,l_a,l_b,indice_to_add)
     return X, Y
+
+
+def prediction_error(ch0_path, ch0_label_path, model_dir_path_form_glob, examples):
+    for i in glob.glob(model_dir_path_form_glob)[:]:
+        print('*'*50)
+        print(i)
+        print('*'*50)
+
+        test_x = np.load(ch0_path)
+        test_y = np.load(ch0_label_path)
+
+        model = keras.models.load_model(i,compile=False)
+        model.compile()
+        predictions = model.predict(test_x)
+
+        #import matplotlib.pyplot as plt
+        #import numpy as np
+        from matplotlib import gridspec
+        
+        samp_ind = np.random.randint(examples, test_x.shape[0],1)[0]#--->268mhz
+
+        fig = plt.figure(figsize=(17,5))
+        # set height ratios for subplots
+        gs = gridspec.GridSpec(2, 1, height_ratios=[2, 1]) 
+        # the first subplot
+        ax0 = plt.subplot(gs[0])
+        # log scale for axis Y of the first subplot
+        #ax0.set_yscale("log")
+        line0, = ax0.plot(test_x[samp_ind], color='black')
+        ax0.set_ylabel('Counts')
+        # the second subplot
+        # shared axis X
+        ax1 = plt.subplot(gs[1], sharex = ax0)
+        line1, = ax1.plot(test_y[samp_ind], color='b', marker='o', linestyle='-')
+        line2, = ax1.plot(predictions[samp_ind], color='red', marker='.', linestyle='-', alpha=0.9)
+        plt.setp(ax0.get_xticklabels(), visible=False)
+        ax1.set_ylabel('Photons')
+        # remove last tick label for the second subplot
+        yticks = ax1.yaxis.get_major_ticks()
+        yticks[-1].label1.set_visible(False)
+        # put legend on first subplot
+        ax0.legend((line0, line1, line2), ('Data sample', 'Label vector', 'Predictions'), loc='upper left')
+        # remove vertical gap between subplots
+        plt.subplots_adjust(hspace=.0)
+        ax0.set_title('Ground truth({}MHz) and prediction({}MHz) comparison'.format(np.round((1000/(1.6*256))*np.sum(test_y[samp_ind]),2), np.round((1000/(1.6*256))*np.sum(predictions[samp_ind]),2)))
+        ax1.set_xlabel('Time-step (1.6ns)')
+        #plt.savefig('Label({}MHz)-pred_comp({}MHz)'.format(np.int((1000/(1.6*256))*np.sum(test_y[samp_ind])), np.int((1000/(1.6*256))*np.sum(predictions[samp_ind]))))
+        plt.show()
+
+        avg_true_rate = []
+        avg_pred_rate = []
+        std_pred_rate = []
+
+        flat_predictions = []
+        flat_labels = []
+
+        cluster_pred = []
+        cluster_labels=[]
+
+        predictions1 = predictions.reshape(predictions.shape[0],predictions.shape[1])
+        test_y1 = test_y.reshape(test_y.shape[0],test_y.shape[1])
+        ref_arr = np.arange(predictions.shape[0])[::int(predictions.shape[0]/predictions.shape[1])]
+        for i in range(1,len(ref_arr))[:]:
+            low_lim = ref_arr[i-1]
+            up_lim = ref_arr[i]
+
+            pred_set = predictions1[low_lim:up_lim]
+            label_set = test_y1[low_lim:up_lim]
+            flat_pred = pred_set.flatten()
+            flat_pred = np.rint(flat_pred)
+            flat_pred_original = np.array([iii for iii in flat_pred])
+            flat_label = label_set.flatten()
+
+            #print(flat_pred)
+            clus_pred = np.diff(flat_pred)
+            clus_label = np.diff(flat_label)
+
+            flat_predictions.append(flat_pred)
+            flat_labels.append(flat_label)
+
+            cluster_pred.append(clus_pred)
+            cluster_labels.append(clus_label)
+
+            #
+            true_rate = (1000/(1.6*256))*np.mean(np.sum(label_set,axis=1))
+            avg_true_rate.append(true_rate)
+
+            pred_rate = (1000/(1.6*256))*np.mean(np.sum(pred_set,axis=1))
+            avg_pred_rate.append(pred_rate)
+
+            pred_rate_std = (1000/(1.6*256))*np.std(np.sum(label_set - pred_set,axis=1))
+            std_pred_rate.append(pred_rate_std)
+
+        flat_predictions = np.array(flat_predictions)
+        flat_labels = np.array(flat_labels)
+
+        cluster_pred = np.array(cluster_pred)
+        cluster_labels = np.array(cluster_labels)
+
+        avg_true_rate = np.array(avg_true_rate)
+        avg_pred_rate = np.array(avg_pred_rate)
+        std_pred_rate = np.array(std_pred_rate)
+
+        error = avg_true_rate - avg_pred_rate
+
+        import matplotlib as mpl
+
+        # Select a color map
+        cmap = mpl.cm.viridis#bwr
+
+        # Some Test data
+
+        x = avg_true_rate # np.linspace(-4, 4, npts) # avg_true_rate
+        y = error # norm.pdf(x) # error
+        z = std_pred_rate # np.sin(2 * x) # std_pred_rate
+        normalize = mpl.colors.Normalize(vmin=z.min(), vmax=z.max())
+
+        # The plot
+        fig = plt.figure(figsize=(18,7))
+        ax = fig.add_axes([0.12, 0.12, 0.68, 0.78])
+        plt.plot(x, y, color="black")
+        plt.xlabel('Rate (MHz)')
+        plt.ylabel(' Average error (MHz)')
+        for i in range(len(x)-1):
+            plt.fill_between([x[i], x[i+1]], [y[i], y[i+1]], color=cmap(normalize(z[i])))
+
+        cbax = fig.add_axes([0.82, 0.12, 0.03, 0.78])
+        cb = mpl.colorbar.ColorbarBase(cbax, cmap=cmap, norm=normalize, orientation='vertical')
+        cb.set_label("Error uncertainty in a waveform (MHz)", rotation=270, labelpad=15)
+        #plt.savefig('shaula_00000-003_ch0_error_ana.png')
+
+def confusion_mat(ch0_path, ch0_label_path, model_dir_path_form_glob):
+    for i in glob.glob(model_dir_path_form_glob):
+        print(i)
+        test_x = np.load(ch0_path)
+        test_y = np.load(ch0_label_path)
+        model = keras.models.load_model(i,compile=False)
+        model.compile()
+
+        predictions = model.predict(test_x)
+
+        lower_lim = 6
+        upper_lim = test_y.shape[1]-10
+
+        test_y1 = test_y[:, lower_lim:upper_lim]
+        predictions1 = predictions.reshape(predictions.shape[0],predictions.shape[1])[:, lower_lim:upper_lim]
+        predictions1 = np.rint(predictions1)# round the predictions
+        test_y1 = np.rint(test_y1)# riund the labels
+
+
+        cm = confusion_matrix(test_y1.ravel(), predictions1.ravel())
+        cm = cm/cm.sum(axis=1)[:,None]
+
+        where_are_NaNs = np.isnan(cm)
+        cm[where_are_NaNs] = 0
+        cm = np.around(cm, decimals=2)
+        cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = cm)
+        #cm_display.plot()
+        fig, ax = plt.subplots(figsize=(13,10))
+        cm_display.plot(ax=ax)
+        #plt.savefig('recall_confusion_matrix.png')
+        plt.show()
