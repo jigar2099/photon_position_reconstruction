@@ -185,7 +185,7 @@ class MonteCarlo:
         get_ind_randomly_for_pulse_peak_to_add = self.get_ind_for_pulse_to_add(lb, ub)
         get_ind_randomly_for_pulse_peak_to_add1 = self.get_ind_for_pulse_to_add(lb1, ub1)
         
-        if j2 == 1:
+        if j2 == 1 and get_ind_randomly_for_pulse_peak_to_add<self.sample_size-1 and get_ind_randomly_for_pulse_peak_to_add>0:
             get_ind_randomly_for_pulse_peak_to_add1 = get_ind_randomly_for_pulse_peak_to_add
             if self.samp_swap is True:
                 lb1 = lb;
