@@ -421,3 +421,17 @@ def confusion_mat(ch0_path, ch0_label_path, model_dir_path_form_glob):
         cm_display.plot(ax=ax)
         #plt.savefig('recall_confusion_matrix.png')
         plt.show()
+import numpy as np
+
+def remove_nonzero_neighbors(arr):
+    # Find the indices of the smallest elements in the array
+    smallest_indices = np.where(arr == np.min(arr))[0]
+
+    # Remove the indices of smallest elements whose neighbors are non-zero
+    modified_indices = []
+    for i in smallest_indices:
+        if i > 0 and i < len(arr) - 1:
+            if arr[i-1] == 0 and arr[i+1] == 0:
+                modified_indices.append(i)
+
+    return modified_indices
