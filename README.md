@@ -58,10 +58,11 @@ df = tools.pulse_data(x1)
 df.to_csv('data.csv')
 
 uniq_shapes = tools.filter_shapes_based_on_plat_size(df, x1, lst=[2,3,4,5,6], 
-                                                     save_path='/home/wecapstor1/caph/mppi093h/aqo/110823/')
+                                                     save_path='/home/wcor/caao/110823/')
 ```
+This will create a file named "plateauless_uniq_pulses_2345.npy" in the 
+respected path.
 #### Data analysis
-
 ```ruby
 from iimcsim.tools import pulse_height, pulse_width, pulse_kurtosis, pulse_skewness
 pulse_height(x1)
