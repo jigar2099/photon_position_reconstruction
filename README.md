@@ -70,6 +70,8 @@ pulse_width(x1)
 pulse_kurtosis(x1)
 pulse_skewness(x1)
 ```
+![alt text](plots/shaula_calib_ch0_EDA_plateau.png)
+
 ![alt text](/plots/calib_data_skew_vs_kurtosis_plat_size.gif)
 #### Generate dual-channel MC data
 ```ruby
@@ -80,3 +82,6 @@ dg.data_gen_run().generate_data(train_exe = 50,
                     max_num_photon = 90,
                     folder_name = 'sh06x2')
 ```
+![alt text](plots/unetPP48163264_sh06x2_ex_x2_ch0__256_m_1280_mse_lr_1e-4_150_DROPOUT0_flux_predictions.gif)
+![alt text](plots/unetPP48163264_sh06x2_ex_x2_ch0__256_m_1280_mse_lr_1e-4_150_DROPOUT0.png)
+![alt text](plots/veto_6lhs_10rhs_recall_confusion_matrix.png)
