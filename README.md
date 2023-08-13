@@ -70,7 +70,7 @@ pulse_width(x1)
 pulse_kurtosis(x1)
 pulse_skewness(x1)
 ```
-![alt text](/plots/plots/calib_data_skew_vs_kurtosis_plat_size.gif)
+![alt text](/plots/calib_data_skew_vs_kurtosis_plat_size.gif)
 #### Generate dual-channel MC data
 ```ruby
 import iimcsim.data_gen_run as dg
