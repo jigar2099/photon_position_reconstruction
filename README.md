@@ -82,6 +82,23 @@ dg.data_gen_run().generate_data(train_exe = 50,
                     max_num_photon = 90,
                     folder_name = 'sh06x2')
 ```
+#### Models
+```ruby	
+# MODELS
+from iimcsim.MODELS import MODELS as models
+
+model = models().UNET(bins=256, channel=1, loss_func='mse', opt='adam', metric='mae', reg=0.1, filt_num=2)
+```
+## Results
+Using a large dataset from the above-mentioned method, we trained our model and,
+first tried to compare the flux prediction of the model over a test dataset.
+The below figure depicts a comparison of model prediction over the sample and over population.
+Since the set of samples(with a certain average rate), has partial random pulse shapes, their truth has a certain average and uncertainty. For lower to moderate rates (0-900 MHz), Unet's average predictions are quite accurate, while at extremely higher rates it starts deviating.
+Here, our single set of examples is of 1920 samples, which results in very small uncertainties in population predictions.
 ![alt text](plots/unetPP48163264_sh06x2_ex_x2_ch0__256_m_1280_mse_lr_1e-4_150_DROPOUT0_flux_predictions.gif)
+The plot below depicts the average prediction error as a function of rate.
 ![alt text](plots/unetPP48163264_sh06x2_ex_x2_ch0__256_m_1280_mse_lr_1e-4_150_DROPOUT0.png)
+Since in the label, there are several floats (sliced samples as the edge), we applied the veto over at the edges (LHS:6bins; RHS:10 bins). Then we rounded the predictions.
+- 80% of the time model can successfully identify the background.
+- 70% of the un-overlapped peaks of pulses were identified by the model correctly.
 ![alt text](plots/veto_6lhs_10rhs_recall_confusion_matrix.png)
