@@ -45,12 +45,20 @@ and follow the steps below.
 #### sample generation
 ```ruby
 import iimcsim.shape_ext as sh_ext
+import iimcsim.tools as tools
+
 shapes = sh_ext.shape_generator(
                         calib_file=r"C:\calib_ch0.npy",
                         high_rate_file = r"C:\Usersn\shaula_00000-003_ch0.npy",
                         path_to_save='C:\\Usestruction-main\\notebooks\\',
 )
 x1=shapes.generator(threshold=0, bin_num=2147483600)
+
+df = tools.pulse_data(x1)
+df.to_csv('data.csv')
+
+uniq_shapes = tools.filter_shapes_based_on_plat_size(df, x1, lst=[2,3,4,5,6], 
+                                                     save_path='/home/wecapstor1/caph/mppi093h/aqo/110823/')
 ```
 #### Data analysis
 
