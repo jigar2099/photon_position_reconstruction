@@ -90,6 +90,23 @@ from iimcsim.MODELS import MODELS as models
 model = models().UNET(bins=256, channel=1, loss_func='mse', opt='adam', metric='mae', reg=0.1, filt_num=2)
 ```
 ## Results
+After pulse analysis, we perform model(U-Net) training and then it is important to figure out in which region predictions are more accurate. Because significant number of pulses are highly right-skewed, it affects each MC data.
+In our problem, what we seek to predict is, do we have peak(full pulse) available at specific bin or not. And if there is peak, then how many peaks are there at specific bin. Let’s call it peak-no-peak scenario.
+Number of peaks at specific bin depends on following cases,
+Actual rate of sample: High enough rate increases probability of having multiple overlapped peaks
+Edges of the sample:
+Left edge: first bin of the samples can have more variety of sliced samples, resulting in fractional peak in ground truth (because of the right skewness)
+Right edge: last few bins of the sample have sliced pulses, therefore in ground truth of such samples have fraction of pulse distributed in last few bins, depending on added pulse width of specific pulse
+Consideration of both cases allows MC to add more complexity. Especially at higher rate it is more difficult scenario than identifying overlapped full pulses.
+In this way, we expect that the trained neural network, predicting more accurately on region far from left and right edges of the sample, due to chances of less complexity.
+![alt text](plots/newplot.png)
+Consideration of sliced pulses:
+It covers entire range of rate, instead of covering specific rate examples (based on only number of pulses added in a sample; unlike previous attempts where the aim was to train model for flux calculation).
+This comes with requirement of extremely huge data requirement to train and get efficiently predicting model. And if not satisfied, then imbalance data can degrade the training of NN.
+In present MC, I tried to minimize drawback of point 2, by increasing number of examples.
+![alt text](plots/rate_bins_err_surface_fit_8unet_ch0.png)
+
+
 Using a large dataset from the above-mentioned method, we trained our model and,
 first tried to compare the flux prediction of the model over a test dataset.
 The below figure depicts a comparison of model prediction over the sample and over population.
